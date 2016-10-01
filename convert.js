@@ -12,7 +12,7 @@ fs.readFile('sample-input-nordea.csv', function (err, data) {
     let dataStr = data.toString();
 
     // remove Nordea pay string
-    dataStr = dataStr.replace(/Nordea pay\s/g, '');
+    dataStr = dataStr.replace(/Nordea pay\s/ig, '');
 
     // store each line as an item in array
     let rowArray = dataStr.split('\n');
@@ -41,7 +41,9 @@ fs.readFile('sample-input-nordea.csv', function (err, data) {
         // getting years from transaction date
         let year = columnArray[0].match(/\d{4}/);
         let day = columnArray[0].match(/^\d{2}/);
-        let month = columnArray[0].match(/-(\d{2})-/)[1];
+        let month = columnArray[0].match(/-(\d{2})-/);
+        // prevent accessing array element if no value
+        month = month ? month[1] : null;
 
         // getting month and day from description (more accurate)
         let monthAndDay = columnArray[1].match(/Den (\d{2})\.(\d{2})/);
@@ -50,6 +52,24 @@ fs.readFile('sample-input-nordea.csv', function (err, data) {
         if (monthAndDay) {
             day = monthAndDay[1];
             month = monthAndDay[2];
+        }
+
+        // in case amount is still reserved
+        if (/Reserveret/.test(columnArray[0])) {
+            // set date to today
+            let today = new Date();
+
+            year = today.getFullYear();
+            month = today.getMonth() + 1;
+            day = new Date().getDate();
+
+            if (day < 10) {
+                day = '0' + day;
+            }
+
+            if (month < 10) {
+                month = '0' + month;
+            }
         }
 
         // remove excessive whitespace
@@ -69,14 +89,14 @@ fs.readFile('sample-input-nordea.csv', function (err, data) {
         let isOutflow = /-\d+/.test(amount);
         let outflow = isOutflow ? amount.replace('-', '') : '';
         let inflow = !isOutflow ? amount : '';
-        
+
         // expected format: 'Date,Payee,Category,Memo,Outflow,Inflow'
         arr[idx] = `${year}/${month}/${day},${payee},,${memo},${outflow},${inflow}`;
     });
 
     // add ynab column names
     rowArray.unshift('Date,Payee,Category,Memo,Outflow,Inflow');
-    console.log(rowArray);
+    
     writeFile('output.csv', rowArray.join('\n'));
 });
 
