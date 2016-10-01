@@ -1,19 +1,18 @@
 let fs = require('fs');
 
+const config = {
+    cashoutCategory: 'cash'
+};
+
 fs.readFile('sample-input-nordea.csv', function (err, data) {
     if (err) {
         return console.error(err);
     }
 
-    
     let dataStr = data.toString();
 
-    dataStr = dataStr.replace(/Nordea pay k.b,/g, '');
-    dataStr = dataStr.replace(/Nordea pay k.b /g, '');
-
-    // replace commas with dots
-    // e.x.: 100,00 becomes 100.00
-    dataStr = dataStr.replace(/,/g, '.');
+    // remove Nordea pay string
+    dataStr = dataStr.replace(/Nordea pay\s/g, '');
 
     // store each line as an item in array
     let rowArray = dataStr.split('\n');
@@ -34,6 +33,11 @@ fs.readFile('sample-input-nordea.csv', function (err, data) {
         // [4] running balance - '999.99'
         let columnArray = val.split(';');
 
+        // remove kob,
+        columnArray[1] = columnArray[1]
+            .replace(/k.b,?(\s\.\s)?\s?/, '')
+            .replace(',', '.');
+
         // getting years from transaction date
         let year = columnArray[0].match(/\d{4}/);
 
@@ -41,9 +45,16 @@ fs.readFile('sample-input-nordea.csv', function (err, data) {
         let monthAndDay = columnArray[1].match(/Den (\d{2})\.(\d{2})/);
         let day = monthAndDay[1];
         let month = monthAndDay[2];
+        columnArray[1] = columnArray[1].replace(/\s+/g, ' ');
         let payee = columnArray[1].replace(/Den \d{2}\.\d{2} .+/, '');
+
+        // in case of cashout, set the payee to empty string
+        if (/udbetaling/.test(columnArray[1])) {
+            payee = `Transfer: ${config.cashoutCategory}`;
+        }
+
         let memo = columnArray[1].replace(/Den \d{2}\.\d{2}/, '');
-        let amount = columnArray[3];
+        let amount = columnArray[3].replace(',', '.');
         let isOutflow = /-\d+/.test(amount);
         let outflow = isOutflow ? amount.replace('-', '') : '';
         let inflow = !isOutflow ? amount : '';
