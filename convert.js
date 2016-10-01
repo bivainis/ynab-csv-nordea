@@ -75,16 +75,19 @@ fs.readFile('sample-input-nordea.csv', function (err, data) {
         // remove excessive whitespace
         columnArray[1] = columnArray[1].replace(/\s+/g, ' ');
 
-        let payee = columnArray[1].replace(/Den \d{2}\.\d{2} .+/, '');
+        let payee = columnArray[1].replace(/Den \d{2}\.\d{2}(.?)+/, '');
 
         // in case of cashout, set the payee to empty string
         if (/udbetaling/.test(columnArray[1])) {
             payee = `Transfer: ${config.cashoutCategory}`;
         } else if (/gebyr/.test(columnArray[1])) {
             payee = 'Nordea';
+        } else if (/[A-Z]{3}\s\d+\.\d{2}/.test(columnArray[1])) {
+            payee = payee.replace(/EUR \d+\.\d{2}(\s?)+/, '');
         }
 
         let memo = columnArray[1].replace(/Den \d{2}\.\d{2}/, '');
+
         let amount = columnArray[3].replace(',', '.');
         let isOutflow = /-\d+/.test(amount);
         let outflow = isOutflow ? amount.replace('-', '') : '';
@@ -96,7 +99,7 @@ fs.readFile('sample-input-nordea.csv', function (err, data) {
 
     // add ynab column names
     rowArray.unshift('Date,Payee,Category,Memo,Outflow,Inflow');
-    
+
     writeFile('output.csv', rowArray.join('\n'));
 });
 
