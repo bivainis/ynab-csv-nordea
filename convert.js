@@ -12,7 +12,7 @@ fs.readFile('sample-input-nordea.csv', function (err, data) {
     let dataStr = data.toString();
 
     // remove Nordea pay string
-    dataStr = dataStr.replace(/Nordea pay\s/ig, '');
+    dataStr = dataStr.replace(/Nordea pay(\s|,)/ig, '');
 
     // store each line as an item in array
     let rowArray = dataStr.split('\n');
@@ -77,6 +77,11 @@ fs.readFile('sample-input-nordea.csv', function (err, data) {
 
         let payee = columnArray[1].replace(/Den \d{2}\.\d{2}(.?)+/, '');
 
+        // trim payee
+        payee = payee
+            .replace(/^(\s|\.|\s)+/g, '')
+            .replace(/(\s|\d)+$/g, '');
+
         // in case of cashout, set the payee to empty string
         if (/udbetaling/.test(columnArray[1])) {
             payee = `Transfer: ${config.cashoutCategory}`;
@@ -99,7 +104,7 @@ fs.readFile('sample-input-nordea.csv', function (err, data) {
 
     // add ynab column names
     rowArray.unshift('Date,Payee,Category,Memo,Outflow,Inflow');
-
+console.log(rowArray);
     writeFile('output.csv', rowArray.join('\n'));
 });
 
