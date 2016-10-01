@@ -40,17 +40,28 @@ fs.readFile('sample-input-nordea.csv', function (err, data) {
 
         // getting years from transaction date
         let year = columnArray[0].match(/\d{4}/);
+        let day = columnArray[0].match(/^\d{2}/);
+        let month = columnArray[0].match(/-(\d{2})-/)[1];
 
         // getting month and day from description (more accurate)
         let monthAndDay = columnArray[1].match(/Den (\d{2})\.(\d{2})/);
-        let day = monthAndDay[1];
-        let month = monthAndDay[2];
+
+        // if available, set a more accurate date from description
+        if (monthAndDay) {
+            day = monthAndDay[1];
+            month = monthAndDay[2];
+        }
+
+        // remove excessive whitespace
         columnArray[1] = columnArray[1].replace(/\s+/g, ' ');
+
         let payee = columnArray[1].replace(/Den \d{2}\.\d{2} .+/, '');
 
         // in case of cashout, set the payee to empty string
         if (/udbetaling/.test(columnArray[1])) {
             payee = `Transfer: ${config.cashoutCategory}`;
+        } else if (/gebyr/.test(columnArray[1])) {
+            payee = 'Nordea';
         }
 
         let memo = columnArray[1].replace(/Den \d{2}\.\d{2}/, '');
@@ -58,14 +69,14 @@ fs.readFile('sample-input-nordea.csv', function (err, data) {
         let isOutflow = /-\d+/.test(amount);
         let outflow = isOutflow ? amount.replace('-', '') : '';
         let inflow = !isOutflow ? amount : '';
-
+        
         // expected format: 'Date,Payee,Category,Memo,Outflow,Inflow'
         arr[idx] = `${year}/${month}/${day},${payee},,${memo},${outflow},${inflow}`;
     });
 
     // add ynab column names
     rowArray.unshift('Date,Payee,Category,Memo,Outflow,Inflow');
-
+    console.log(rowArray);
     writeFile('output.csv', rowArray.join('\n'));
 });
 
