@@ -1,10 +1,12 @@
 let fs = require('fs');
 
 const config = {
+    inputFile: 'sample-input-nordea.csv',
+    outputFile: 'output.csv',
     cashoutCategory: 'cash'
 };
 
-fs.readFile('sample-input-nordea.csv', function (err, data) {
+fs.readFile(config.inputFile, function (err, data) {
     if (err) {
         return console.error(err);
     }
@@ -105,7 +107,7 @@ fs.readFile('sample-input-nordea.csv', function (err, data) {
     // add ynab column names
     rowArray.unshift('Date,Payee,Category,Memo,Outflow,Inflow');
 console.log(rowArray);
-    writeFile('output.csv', rowArray.join('\n'));
+    writeFile(config.outputFile, rowArray.join('\n'));
 });
 
 /**
